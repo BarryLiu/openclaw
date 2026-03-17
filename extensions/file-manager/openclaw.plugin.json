@@ -1,0 +1,44 @@
+{
+  "id": "file-manager",
+  "name": "File Manager",
+  "version": "1.0.0",
+  "description": "File upload/download/management for agent workspaces and skills",
+  "author": "OpenClaw Team",
+  "main": "index.ts",
+  "type": "module",
+  "engines": {
+    "openclaw": ">=1.0.0"
+  },
+  "permissions": [
+    "http",
+    "filesystem"
+  ],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "maxFileSize": {
+        "type": "number",
+        "default": 104857600,
+        "description": "Maximum file size in bytes (default: 100MB)"
+      },
+      "allowedExtensions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Allowed file extensions (empty = all allowed)"
+      }
+    }
+  },
+  "uiHints": {
+    "maxFileSize": {
+      "label": "Maximum File Size",
+      "help": "Maximum file size in bytes (default: 100MB)"
+    },
+    "allowedExtensions": {
+      "label": "Allowed Extensions",
+      "help": "List of allowed file extensions. Leave empty to allow all files."
+    }
+  }
+}

@@ -1,0 +1,93 @@
+# 使用本库代码构建并推送（不拉取上游 openclaw 源码，直接用当前仓库）
+name: Build OpenClaw Image (This Repo)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      openclawTag:
+        default: "2026.2.3"
+        description: "OpenClaw Release Tag / Version (e.g. 2026.2.3)"
+        required: true
+      dockerhubTag:
+        default: "2026.2.3"
+        description: "Docker Hub Tag"
+        required: false
+      platforms:
+        description: "Platforms"
+        default: "linux/amd64,linux/arm64/v8"
+        required: true
+      pushLatest:
+        description: "Push latest tag"
+        default: "true"
+        required: true
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    env:
+      OPENCLAW_EXTENSIONS: ""
+      OPENCLAW_INSTALL_DOCKER_CLI: ""
+      OPENCLAW_DOCKER_APT_PACKAGES: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.openclawTag }}" >> "$GITHUB_OUTPUT"
+            echo "docker_tag=${{ github.event.inputs.dockerhubTag || github.event.inputs.openclawTag }}" >> "$GITHUB_OUTPUT"
+          else
+            tag="${GITHUB_REF#refs/tags/v}"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            echo "docker_tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build OpenClaw Image and Push (this repo)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64/v8' }}
+          push: true
+          build-args: |
+            OPENCLAW_EXTENSIONS=${{ env.OPENCLAW_EXTENSIONS }}
+            OPENCLAW_INSTALL_DOCKER_CLI=${{ env.OPENCLAW_INSTALL_DOCKER_CLI }}
+            OPENCLAW_DOCKER_APT_PACKAGES=${{ env.OPENCLAW_DOCKER_APT_PACKAGES }}
+          tags: |
+            barryliu/openclaw:${{ steps.version.outputs.docker_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push Latest Tag
+        if: github.event_name == 'push' || github.event.inputs.pushLatest == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64/v8' }}
+          push: true
+          build-args: |
+            OPENCLAW_EXTENSIONS=${{ env.OPENCLAW_EXTENSIONS }}
+            OPENCLAW_INSTALL_DOCKER_CLI=${{ env.OPENCLAW_INSTALL_DOCKER_CLI }}
+            OPENCLAW_DOCKER_APT_PACKAGES=${{ env.OPENCLAW_DOCKER_APT_PACKAGES }}
+          tags: |
+            barryliu/openclaw:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
