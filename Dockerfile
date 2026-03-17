@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+#### syntax=docker/dockerfile:1.7
 
 # Opt-in extension dependencies at build time (space-separated directory names).
 # Example: docker build --build-arg OPENCLAW_EXTENSIONS="diagnostics-otel matrix" .
@@ -53,9 +53,14 @@ COPY patches ./patches
 
 COPY --from=ext-deps /out/ ./extensions/
 
+# Ensure git is available and force GitHub to HTTPS so git-based deps (e.g. libsignal-node)
+# clone without SSH. Same RUN as pnpm install so git config is in effect when pnpm runs git.
 # Reduce OOM risk on low-memory hosts during dependency installation.
-# Docker builds on small VMs may otherwise fail with "Killed" (exit 137).
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends git ca-certificates && \
+    git config --global url."https://github.com/".insteadOf "git@github.com:" && \
+    rm -rf /var/lib/apt/lists/*
 RUN --mount=type=cache,id=openclaw-pnpm-store,target=/root/.local/share/pnpm/store,sharing=locked \
+    git config --global url."https://github.com/".insteadOf "git@github.com:" && \
     NODE_OPTIONS=--max-old-space-size=2048 pnpm install --frozen-lockfile
 
 COPY . .

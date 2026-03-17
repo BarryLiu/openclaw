@@ -1,0 +1,17 @@
+{
+  "name": "openclaw-file-manager-plugin",
+  "version": "1.0.0",
+  "description": "File upload/download/management plugin for OpenClaw",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.32.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
