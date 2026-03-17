@@ -1,11 +1,25 @@
 # 创建外部网络 openclaw_net（如果不存在）:
 # docker network create --driver bridge --subnet=172.33.0.0/16 --gateway=172.33.0.1 openclaw_net
 #
-# 或者如果网络已存在，直接使用即可
+# 构建（支持 Linux amd64 服务器）:
+#   docker compose -f docker-compose-custom.yml build
+# 启动:
+#   docker compose -f docker-compose-custom.yml up -d
+#
+# 构建时可传环境变量: OPENCLAW_EXTENSIONS, OPENCLAW_INSTALL_DOCKER_CLI, OPENCLAW_DOCKER_APT_PACKAGES
 
 services:
   openclaw-gateway:
     image: ${OPENCLAW_IMAGE:-openclaw:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+      args:
+        OPENCLAW_EXTENSIONS: ${OPENCLAW_EXTENSIONS:-}
+        OPENCLAW_INSTALL_DOCKER_CLI: ${OPENCLAW_INSTALL_DOCKER_CLI:-}
+        OPENCLAW_DOCKER_APT_PACKAGES: ${OPENCLAW_DOCKER_APT_PACKAGES:-}
     environment:
       HOME: /home/node
       TERM: xterm-256color
